@@ -1,0 +1,6 @@
+{
+  "api": ["db", "cache", "auth"],
+  "web": ["api"],
+  "payments": ["db", "ledger"],
+  "auth": ["db"]
+}
