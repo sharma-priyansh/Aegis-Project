@@ -74,9 +74,11 @@ class Budget:
     _start: float = field(default=0.0, init=False)
     _iterations: int = field(default=0, init=False)
     _tokens: int = field(default=0, init=False)
+    _started: bool = field(default=False, init=False)
 
     def start(self) -> "Budget":
         self._start = self.clock()
+        self._started = True
         return self
 
     def charge_iteration(self) -> None:
@@ -102,6 +104,6 @@ class Budget:
             return f"iteration budget exhausted ({self._iterations}/{self.max_iterations})"
         if self._tokens >= self.max_tokens:
             return f"token budget exhausted ({self._tokens}/{self.max_tokens})"
-        if self._start and self.elapsed() >= self.wallclock_seconds:
+        if self._started and self.elapsed() >= self.wallclock_seconds:
             return f"wallclock budget exhausted ({self.elapsed():.0f}s/{self.wallclock_seconds:.0f}s)"
         return None
