@@ -1,0 +1,9 @@
+# Global kill switch (ADR-019). Setting mode=observe (and scaling executor to 0) drops
+# Aegis to suggest/observe-only instantly. GitOps-reviewed; flipping it is auditable.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aegis-killswitch
+  namespace: aegis
+data:
+  AUTONOMY_MODE: "suggest"   # observe | suggest | auto_low

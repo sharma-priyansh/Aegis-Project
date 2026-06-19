@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aegis
+  labels:
+    app.kubernetes.io/part-of: aegis
+    # ADR-019: Aegis runs in its own namespace/failure domain, separate from the
+    # workloads it remediates. It must never share fate with its targets.

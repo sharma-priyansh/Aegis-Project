@@ -26,3 +26,4 @@ are marked accordingly.
 | 018 | Correlation as deterministic-first stateful streaming join | Accepted |
 | 019 | Aegis reliability isolation + no self-remediation in v1 | Accepted |
 | 020 | Signal/trace retention tiering | Accepted |
+| 021 | Offline infra adapters (embeddings/LLM/runtime) | Accepted |

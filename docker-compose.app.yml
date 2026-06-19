@@ -1,0 +1,66 @@
+# Application services overlay. Run with:
+#   docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+# Infra (postgres/redis/kafka/qdrant/otel) comes from docker-compose.yml.
+name: aegis
+
+x-app: &app
+  build: { context: ., dockerfile: Dockerfile }
+  image: aegis:latest
+  env_file: [.env.app]
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+    kafka: { condition: service_healthy }
+  networks: [aegis]
+  restart: unless-stopped
+
+services:
+  ingestion:
+    <<: *app
+    command: ["python", "-m", "aegis_services.ingestion_gateway.app"]
+    environment: { PORT: "8001", AEGIS_SERVICE_NAME: ingestion }
+    ports: ["8001:8001"]
+
+  detection:
+    <<: *app
+    command: ["python", "-m", "aegis_services.detection.worker"]
+    environment: { AEGIS_SERVICE_NAME: detection }
+
+  rag:
+    <<: *app
+    command: ["python", "-m", "aegis_services.rag_service.app"]
+    environment: { PORT: "8004", AEGIS_SERVICE_NAME: rag }
+    ports: ["8004:8004"]
+
+  knowledge:
+    <<: *app
+    command: ["python", "-m", "aegis_services.knowledge_ingestor.service"]
+    environment: { PORT: "8003", AEGIS_SERVICE_NAME: knowledge }
+    ports: ["8003:8003"]
+
+  orchestrator:
+    <<: *app
+    command: ["python", "-m", "aegis_services.orchestrator.worker"]
+    environment: { AEGIS_SERVICE_NAME: orchestrator, AEGIS_RAG_URL: "http://rag:8004" }
+
+  policy:
+    <<: *app
+    command: ["python", "-m", "aegis_services.policy_approval.app"]
+    environment: { PORT: "8005", AEGIS_SERVICE_NAME: policy }
+    ports: ["8005:8005"]
+
+  executor:
+    <<: *app
+    command: ["python", "-m", "aegis_services.action_executor.worker"]
+    environment: { AEGIS_SERVICE_NAME: executor }
+
+  notification:
+    <<: *app
+    command: ["python", "-m", "aegis_services.notification.worker"]
+    environment: { AEGIS_SERVICE_NAME: notification }
+
+  console:
+    <<: *app
+    command: ["python", "-m", "aegis_services.console_api.app"]
+    environment: { PORT: "8002", AEGIS_SERVICE_NAME: console, AEGIS_PDP_URL: "http://policy:8005" }
+    ports: ["8002:8002"]

@@ -1,0 +1,250 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion
+  namespace: aegis
+  labels: { app: ingestion }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: ingestion } }
+  template:
+    metadata:
+      labels: { app: ingestion }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001 }
+      containers:
+        - name: ingestion
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.ingestion_gateway.app"]
+          ports: [{ containerPort: 8001 }]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: PORT, value: "8001" }
+            - { name: AEGIS_SERVICE_NAME, value: "ingestion" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8001 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8001 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingestion
+  namespace: aegis
+spec:
+  selector: { app: ingestion }
+  ports: [{ port: 8001, targetPort: 8001 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console
+  namespace: aegis
+  labels: { app: console }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: console } }
+  template:
+    metadata:
+      labels: { app: console }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001 }
+      containers:
+        - name: console
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.console_api.app"]
+          ports: [{ containerPort: 8002 }]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: PORT, value: "8002" }
+            - { name: AEGIS_SERVICE_NAME, value: "console" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8002 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8002 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: console
+  namespace: aegis
+spec:
+  selector: { app: console }
+  ports: [{ port: 8002, targetPort: 8002 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knowledge
+  namespace: aegis
+  labels: { app: knowledge }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: knowledge } }
+  template:
+    metadata:
+      labels: { app: knowledge }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001 }
+      containers:
+        - name: knowledge
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.knowledge_ingestor.service"]
+          ports: [{ containerPort: 8003 }]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: PORT, value: "8003" }
+            - { name: AEGIS_SERVICE_NAME, value: "knowledge" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8003 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8003 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: knowledge
+  namespace: aegis
+spec:
+  selector: { app: knowledge }
+  ports: [{ port: 8003, targetPort: 8003 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag
+  namespace: aegis
+  labels: { app: rag }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: rag } }
+  template:
+    metadata:
+      labels: { app: rag }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001 }
+      containers:
+        - name: rag
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.rag_service.app"]
+          ports: [{ containerPort: 8004 }]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: PORT, value: "8004" }
+            - { name: AEGIS_SERVICE_NAME, value: "rag" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8004 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8004 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag
+  namespace: aegis
+spec:
+  selector: { app: rag }
+  ports: [{ port: 8004, targetPort: 8004 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy
+  namespace: aegis
+  labels: { app: policy }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: policy } }
+  template:
+    metadata:
+      labels: { app: policy }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001 }
+      containers:
+        - name: policy
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.policy_approval.app"]
+          ports: [{ containerPort: 8005 }]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: PORT, value: "8005" }
+            - { name: AEGIS_SERVICE_NAME, value: "policy" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8005 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8005 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: policy
+  namespace: aegis
+spec:
+  selector: { app: policy }
+  ports: [{ port: 8005, targetPort: 8005 }]

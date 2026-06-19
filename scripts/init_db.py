@@ -14,6 +14,8 @@ from sqlalchemy import select, text
 from aegis_common.config import get_settings
 from aegis_common.db import init_engine, session_scope
 from aegis_common.models import ActionCatalogRow, Base, PolicyRow
+# Importing this module registers the remediation/workflow tables on Base.metadata.
+import aegis_common.models_remediation  # noqa: F401
 
 SEED_ACTIONS = [
     dict(name="restart_deployment", description="Roll-restart a Kubernetes deployment",

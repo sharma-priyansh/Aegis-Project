@@ -1,0 +1,12 @@
+# Default-deny ingress; allow only intra-namespace traffic (§13 defense-in-depth).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: aegis-default-deny
+  namespace: aegis
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}        # same-namespace only

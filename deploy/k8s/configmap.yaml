@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aegis-config
+  namespace: aegis
+data:
+  AEGIS_ENVIRONMENT: "prod"
+  AEGIS_LOG_LEVEL: "INFO"
+  AEGIS_POSTGRES_DSN: "postgresql+asyncpg://aegis:aegis@postgres:5432/aegis"
+  AEGIS_REDIS_URL: "redis://redis:6379/0"
+  AEGIS_KAFKA_BOOTSTRAP: "kafka:9092"
+  AEGIS_OTEL_ENDPOINT: "http://otel-collector:4317"
+  AEGIS_QDRANT_URL: "http://qdrant:6333"
+  AEGIS_OLLAMA_URL: "http://ollama:11434"
+  AEGIS_RAG_URL: "http://rag:8004"
+  AEGIS_PDP_URL: "http://policy:8005"

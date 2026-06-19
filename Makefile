@@ -42,3 +42,35 @@ run-console: # run Console API (:8002)
 
 demo: # send sample signals to a running gateway
 	python scripts/send_demo_signals.py
+
+# --- Phase 2-4 services -------------------------------------------------------
+install-ai-extra: # install AI + k8s extras
+	pip install -e ".[dev,ai,k8s]"
+
+run-rag: # run RAG service (:8004)
+	python -m aegis_services.rag_service.app
+
+run-knowledge: # run Knowledge Ingestor (:8003)
+	python -m aegis_services.knowledge_ingestor.service
+
+run-orchestrator: # run LangGraph orchestrator worker
+	python -m aegis_services.orchestrator.worker
+
+run-policy: # run Policy/Approval PDP (:8005)
+	python -m aegis_services.policy_approval.app
+
+run-executor: # run Action Executor PEP
+	python -m aegis_services.action_executor.worker
+
+seed-runbooks: # load demo runbooks into the knowledge base
+	python scripts/seed_runbooks.py
+
+up-all: # build + run full stack (infra + all services)
+	docker compose -f docker-compose.yml -f docker-compose.app.yml up -d --build
+	docker compose up kafka-init
+
+test-integration: # run e2e tests against a running stack
+	AEGIS_RUN_INTEGRATION=1 pytest tests/integration -q
+
+k8s-apply: # apply Kubernetes manifests
+	kubectl apply -k deploy/k8s

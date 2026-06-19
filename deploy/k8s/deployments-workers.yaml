@@ -1,0 +1,129 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detection
+  namespace: aegis
+  labels: { app: detection }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: detection } }
+  template:
+    metadata:
+      labels: { app: detection }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001 }
+      containers:
+        - name: detection
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.detection.worker"]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: AEGIS_SERVICE_NAME, value: "detection" }
+
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: aegis
+  labels: { app: orchestrator }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: orchestrator } }
+  template:
+    metadata:
+      labels: { app: orchestrator }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001 }
+      containers:
+        - name: orchestrator
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.orchestrator.worker"]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: AEGIS_SERVICE_NAME, value: "orchestrator" }
+
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification
+  namespace: aegis
+  labels: { app: notification }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: notification } }
+  template:
+    metadata:
+      labels: { app: notification }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001 }
+      containers:
+        - name: notification
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.notification.worker"]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: AEGIS_SERVICE_NAME, value: "notification" }
+
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: executor
+  namespace: aegis
+  labels: { app: executor }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: executor } }
+  template:
+    metadata:
+      labels: { app: executor }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001 }
+      containers:
+        - name: executor
+          image: aegis:latest
+          command: ["python", "-m", "aegis_services.action_executor.worker"]
+          envFrom:
+            - configMapRef: { name: aegis-config }
+            - secretRef: { name: aegis-secrets }
+          env:
+            - { name: AEGIS_SERVICE_NAME, value: "executor" }
+            - name: AUTONOMY_MODE
+              valueFrom: { configMapKeyRef: { name: aegis-killswitch, key: AUTONOMY_MODE } }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }

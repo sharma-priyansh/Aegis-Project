@@ -10,6 +10,7 @@ Create Date: 2026-06-19
 from alembic import op
 
 from aegis_common.models import Base
+import aegis_common.models_remediation  # noqa: F401  (registers remediation tables)
 
 revision = "0001_initial"
 down_revision = None
@@ -19,9 +20,7 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    # Create all tables defined on the ORM metadata (single source of truth).
     Base.metadata.create_all(bind=bind)
-    # Linearizable, monotonic fencing-token source (ADR-009). Not expressible via ORM.
     op.execute("CREATE SEQUENCE IF NOT EXISTS aegis_fencing_token_seq START 1 INCREMENT 1")
 
 

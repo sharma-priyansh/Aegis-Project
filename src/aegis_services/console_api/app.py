@@ -4,9 +4,9 @@ Read path (CQRS-lite, AP per ADR-004): lists/inspects incidents from Postgres.
 Live path: a background Kafka consumer on `incidents.lifecycle` broadcasts events to
 connected WebSocket clients for a real-time timeline (NFR-1 < 1s console latency).
 
-Control endpoints (approve/reject) are stubbed to 501 in Phase 1 and implemented in
-Phase 4 with the Policy/Approval service — wiring them now would imply an action path
-that does not yet exist (we do not fake business logic).
+Control: human approve/reject is proxied to the Policy/Approval PDP (ADR-007/014). The
+Console never signs or executes — it forwards decisions to the PDP, which records the
+signed, immutable approval and requests execution from the Executor (PEP).
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import httpx
 import orjson
 from aiokafka import AIOKafkaConsumer
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -33,6 +34,7 @@ from aegis_common.telemetry import setup_telemetry
 
 log = get_logger(__name__)
 settings = get_settings()
+PDP_URL = os.getenv("AEGIS_PDP_URL", "http://localhost:8005")
 
 
 class Broadcaster:
@@ -156,10 +158,31 @@ async def get_one(incident_id: uuid.UUID) -> IncidentDetail:
         return detail
 
 
-@app.post("/incidents/{incident_id}/approve", status_code=501)
-async def approve(incident_id: uuid.UUID) -> dict:
-    """Approval gate — implemented in Phase 4 with the Policy/Approval service (ADR-007)."""
-    raise HTTPException(status_code=501, detail="approval gate lands in Phase 4")
+class ApprovalIn(BaseModel):
+    plan_id: uuid.UUID
+    decision: str  # approved | rejected
+    approver: str
+
+
+@app.get("/plans/pending")
+async def pending_plans() -> list[dict]:
+    """List plans awaiting approval (read-through to the PDP)."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(f"{PDP_URL}/v1/plans/pending")
+    return resp.json()
+
+
+@app.post("/plans/decision")
+async def plan_decision(body: ApprovalIn) -> dict:
+    """Proxy a human approve/reject to the Policy/Approval PDP (ADR-007/014)."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.post(
+            f"{PDP_URL}/v1/plans/{body.plan_id}/decision",
+            json={"decision": body.decision, "approver": body.approver},
+        )
+    if resp.status_code >= 400:
+        raise HTTPException(resp.status_code, resp.text)
+    return resp.json()
 
 
 @app.websocket("/ws/incidents")

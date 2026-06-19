@@ -10,12 +10,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlalchemy import pool
 
 from aegis_common.models import Base
+import aegis_common.models_remediation  # noqa: F401  (registers remediation tables)
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Allow env override of the DSN (12-factor).
 dsn = os.getenv("AEGIS_POSTGRES_DSN")
 if dsn:
     config.set_main_option("sqlalchemy.url", dsn)
